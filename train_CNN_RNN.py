@@ -1,17 +1,12 @@
 from keras.models import Sequential
 from keras.layers import Dropout, Flatten, Dense
 from keras import applications
-from keras.optimizers import RMSprop, SGD
+from keras.optimizers import SGD
 from sklearn.utils import shuffle
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.models import Model
-from keras.utils import np_utils
 from keras.applications.vgg16 import VGG16
-from keras.preprocessing import image
 from keras.layers import LSTM
-from collections import deque
-import numpy as np
 import numpy as np
 import glob,os
 from scipy.misc import imread,imresize
@@ -95,75 +90,90 @@ def extract_features_and_store(train_generator,validation_generator,base_model):
   validation_data = validation_data.reshape(validation_data.shape[0],
                      validation_data.shape[1] * validation_data.shape[2],
                      validation_data.shape[3])
-  print train_data.shape
-  return 
+  
+  return train_data,train_labels,validation_data,validation_labels
 
-model = Sequential()
-model.add(LSTM(256,dropout=0.2,input_shape=(train_data.shape[1],
-                   train_data.shape[2])))
-model.add(Dense(1024, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(5, activation='softmax'))
-sgd = SGD(lr=0.00005, decay = 1e-6, momentum=0.9, nesterov=True)
-model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
-#model.load_weights('video_1_LSTM_1_512.h5')
-callbacks = [ EarlyStopping(monitor='val_loss', patience=10, verbose=0), ModelCheckpoint('video_1_LSTM_1_1024.h5', monitor='val_loss', save_best_only=True, verbose=0) ]
-nb_epoch = 500
-model.fit(train_data,train_labels,validation_data=(validation_data,validation_labels),batch_size=batch_size,nb_epoch=nb_epoch,callbacks=callbacks,shuffle=True,verbose=1)
+def train_model(train_data,train_labels,validation_data,validation_labels):
+  ''' used fully connected layers, SGD optimizer and 
+      checkpoint to store the best weights'''
 
-parent = os.listdir("/Users/svdj16/Documents/6_sem_mini_project/video/test")
+  model = Sequential()
+  model.add(LSTM(256,dropout=0.2,input_shape=(train_data.shape[1],
+                     train_data.shape[2])))
+  model.add(Dense(1024, activation='relu'))
+  model.add(Dropout(0.5))
+  model.add(Dense(5, activation='softmax'))
+  sgd = SGD(lr=0.00005, decay = 1e-6, momentum=0.9, nesterov=True)
+  model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
+  #model.load_weights('video_1_LSTM_1_512.h5')
+  callbacks = [ EarlyStopping(monitor='val_loss', patience=10, verbose=0), ModelCheckpoint('video_1_LSTM_1_1024.h5', monitor='val_loss', save_best_only=True, verbose=0) ]
+  nb_epoch = 500
+  model.fit(train_data,train_labels,validation_data=(validation_data,validation_labels),batch_size=batch_size,nb_epoch=nb_epoch,callbacks=callbacks,shuffle=True,verbose=1)
+  return model
 
-x = []
-y = []
-count = 0
-output = 0
-count_video = 0
-correct_video = 0
-total_video = 0
-for video_class in parent[1:]:
-    print video_class
-    child = os.listdir("/Users/svdj16/Documents/6_sem_mini_project/video/test" + "/" + video_class)
-    for class_i in child[1:]:
-        sub_child = os.listdir("/Users/svdj16/Documents/6_sem_mini_project/video/test" + "/" + video_class + "/" + class_i)
-        for image_fol in sub_child[1:]:
-            if (video_class ==  'class_4' ):
-                if(count%4 == 0):
-                    image = imread("/Users/svdj16/Documents/6_sem_mini_project/video/test" + "/" + video_class + "/" + class_i + "/" + image_fol)
-                    image = imresize(image , (224,224))
-                    
-                    x.append(image)
-                    y.append(output)
-                    #cv2.imwrite('/Users/svdj16/Documents/6_sem_mini_project/video/validate/' + video_class + '/' + str(count) + '_' + image_fol,image)
-                count+=1
-            
-            else:
-                if(count%4 == 0):
-                    image = imread("/Users/svdj16/Documents/6_sem_mini_project/video/test" + "/" + video_class + "/" + class_i + "/" + image_fol)
-                    image = imresize(image , (224,224))
-                    x.append(image)
-                    y.append(output)
-                    #cv2.imwrite('/Users/svdj16/Documents/6_sem_mini_project/video/validate/' + video_class + '/' + str(count) + '_' + image_fol,image)
-                count+=1
-        #correct_video+=1
-        x = np.array(x)
-        y = np.array(y)
-        x_features = base_model.predict(x)
-        np.save(open('feat_' + 'class_' + str(output) + '_' + str(count_video) +'_'  + '.npy','w'),x)
+def test_on_whole_videos(train_data,train_labels,validation_data,validation_labels):
+  parent = os.listdir("/Users/.../video/test")
+  #.....................................Testing on whole videos.................................................................
+  x = []
+  y = []
+  count = 0
+  output = 0
+  count_video = 0
+  correct_video = 0
+  total_video = 0
+  base_model = load_VGG16_model()
+  model = train_model(train_data,train_labels,validation_data,validation_labels)
+  for video_class in parent[1:]:
+      print video_class
+      child = os.listdir("/Users/.../video/test" + "/" + video_class)
+      for class_i in child[1:]:
+          sub_child = os.listdir("/Users/.../video/test" + "/" + video_class + "/" + class_i)
+          for image_fol in sub_child[1:]:
+              if (video_class ==  'class_4' ):
+                  if(count%4 == 0):
+                      image = imread("/Users/.../video/test" + "/" + video_class + "/" + class_i + "/" + image_fol)
+                      image = imresize(image , (224,224))
 
-        correct = 0
-        answer = model.predict(x_features)
-        for i in range(len(answer)):
-            if(y[i] == np.argmax(answer[i])):
-                correct+=1
-        print correct,"correct",len(answer)
-        total_video+=1
-        if(correct>= len(answer)/2):
-            correct_video+=1
-        x = []
-        y = []
-        count_video+=1
-    output+=1
+                      x.append(image)
+                      y.append(output)
+                      #cv2.imwrite('/Users/.../video/validate/' + video_class + '/' + str(count) + '_' + image_fol,image)
+                  count+=1
 
-print "correct_video",correct_video,"total_video",total_video
-print "The accuracy for video classification of ",total_video, " videos is ", (correct_video/total_video)
+              else:
+                  if(count%4 == 0):
+                      image = imread("/Users/.../video/test" + "/" + video_class + "/" + class_i + "/" + image_fol)
+                      image = imresize(image , (224,224))
+                      x.append(image)
+                      y.append(output)
+                      #cv2.imwrite('/Users/.../video/validate/' + video_class + '/' + str(count) + '_' + image_fol,image)
+                  count+=1
+          #correct_video+=1
+          x = np.array(x)
+          y = np.array(y)
+          x_features = base_model.predict(x)
+          #np.save(open('feat_' + 'class_' + str(output) + '_' + str(count_video) +'_'  + '.npy','w'),x)
 
+          correct = 0
+          
+          answer = model.predict(x_features)
+          for i in range(len(answer)):
+              if(y[i] == np.argmax(answer[i])):
+                  correct+=1
+          print correct,"correct",len(answer)
+          total_video+=1
+          if(correct>= len(answer)/2):
+              correct_video+=1
+          x = []
+          y = []
+          count_video+=1
+      output+=1
+
+  print "correct_video",correct_video,"total_video",total_video
+  print "The accuracy for video classification of ",total_video, " videos is ", (correct_video/total_video)
+  
+if __name__ == '__main__':
+  train_generator,validation_generator = bring_data_from_directory()
+  base_model = load_VGG16_model()
+  train_data,train_labels,validation_data,validation_labels = extract_features_and_store(train_generator,validation_generator,base_model)
+  train_model(train_data,train_labels,validation_data,validation_labels)
+  test_on_whole_videos(train_data,train_labels,validation_data,validation_labels)
