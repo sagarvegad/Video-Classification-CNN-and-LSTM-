@@ -2,13 +2,13 @@ import os
 import math
 import cv2
 
-listing = os.listdir("/Users/svdj16/Documents/6_sem_mini_project/video/class_3")
+listing = os.listdir("/Users/.../video/class_3")
 count = 1
 for file in listing:
-    video = cv2.VideoCapture("/Users/svdj16/Documents/6_sem_mini_project/video/class_3/" + file)
+    video = cv2.VideoCapture("/Users/.../video/class_3/" + file)
     print(video.isOpened())
     framerate = video.get(5)
-    os.makedirs("/Users/svdj16/Documents/6_sem_mini_project/video/class_3_images/" + "video_" + str(int(count)))
+    os.makedirs("/Users/.../" + "video_" + str(int(count)))
     while (video.isOpened()):
         frameId = video.get(1)
         success,image = video.read()
@@ -17,7 +17,7 @@ for file in listing:
         if (success != True):
             break
         if (frameId % math.floor(framerate) == 0):
-            filename = "/Users/svdj16/Documents/6_sem_mini_project/video/class_3_images/video_" + str(int(count)) + "/image_" + str(int(frameId / math.floor(framerate))+1) + ".jpg"
+            filename = "/Users/.../video_" + str(int(count)) + "/image_" + str(int(frameId / math.floor(framerate))+1) + ".jpg"
             print(filename)
             cv2.imwrite(filename,image)
     video.release()
