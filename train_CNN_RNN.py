@@ -11,93 +11,93 @@ from keras.applications.vgg16 import VGG16
 from keras.preprocessing import image
 from keras.layers import LSTM
 from collections import deque
-#from keras.applications.vgg19 import preprocess_input
 import numpy as np
 import numpy as np
 import glob,os
 from scipy.misc import imread,imresize
 
 batch_size = 128
-datagen = ImageDataGenerator(rescale=1. / 255)
-train_generator = datagen.flow_from_directory(
-        'train',
-        target_size=(224, 224),
-        batch_size=batch_size,
-        class_mode='categorical',  # this means our generator will only yield batches of data, no labels
-        shuffle=True,
-        classes=['class_1','class_2','class_3','class_4','class_5'])
 
-validation_generator = datagen.flow_from_directory(
-        'validate',
-        target_size=(224, 224),
-        batch_size=batch_size,
-        class_mode='categorical',  # this means our generator will only yield batches of data, no labels
-        shuffle=True,
-        classes=['class_1','class_2','class_3','class_4','class_5'])
+def bring_data_from_directory():
+  datagen = ImageDataGenerator(rescale=1. / 255)
+  train_generator = datagen.flow_from_directory(
+          'train',
+          target_size=(224, 224),
+          batch_size=batch_size,
+          class_mode='categorical',  # this means our generator will only yield batches of data, no labels
+          shuffle=True,
+          classes=['class_1','class_2','class_3','class_4','class_5'])
 
-base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224,224,3))
-print "Model loaded..!"
-print base_model.summary()
+  validation_generator = datagen.flow_from_directory(
+          'validate',
+          target_size=(224, 224),
+          batch_size=batch_size,
+          class_mode='categorical',  # this means our generator will only yield batches of data, no labels
+          shuffle=True,
+          classes=['class_1','class_2','class_3','class_4','class_5'])
+  return train_generator,validation_generator
 
-'''
-x_generator = None
-y_lable = None
+def load_VGG16_model():
+  base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224,224,3))
+  print "Model loaded..!"
+  print base_model.summary()
+  return base_model
 
-batch = 0
-for x,y in train_generator:
-    if batch == (56021/batch_size):
-        break
-    print "predict on batch:",batch
-    batch+=1
-    if x_generator==None:
-       x_generator = base_model.predict_on_batch(x)
-       y_lable = y
-       print y
-    else:
-       x_generator = np.append(x_generator,base_model.predict_on_batch(x),axis=0)
-       y_lable = np.append(y_lable,y,axis=0)
+def extract_features_and_store(train_generator,validation_generator,base_model):
+  '''
+  x_generator = None
+  y_lable = None
+  batch = 0
+  for x,y in train_generator:
+      if batch == (56021/batch_size):
+          break
+      print "predict on batch:",batch
+      batch+=1
+      if x_generator==None:
+         x_generator = base_model.predict_on_batch(x)
+         y_lable = y
+         print y
+      else:
+         x_generator = np.append(x_generator,base_model.predict_on_batch(x),axis=0)
+         y_lable = np.append(y_lable,y,axis=0)
+  x_generator,y_lable = shuffle(x_generator,y_lable)
+  np.save(open('video_x_VGG16.npy', 'w'),x_generator)
+  np.save(open('video_y_VGG16.npy','w'),y_lable)
+  batch = 0
+  x_generator = None
+  y_lable = None
+  for x,y in validation_generator:
+      if batch == (3974/batch_size):
+          break
+      print "predict on batch validate:",batch
+      batch+=1
+      if x_generator==None:
+         x_generator = base_model.predict_on_batch(x)
+         y_lable = y
+      else:
+         x_generator = np.append(x_generator,base_model.predict_on_batch(x),axis=0)
+         y_lable = np.append(y_lable,y,axis=0)
+  x_generator,y_lable = shuffle(x_generator,y_lable)
+  np.save(open('video_x_validate_VGG16.npy', 'w'),x_generator)
+  np.save(open('video_y_validate_VGG16.npy','w'),y_lable)
+  '''
 
-x_generator,y_lable = shuffle(x_generator,y_lable)
-np.save(open('video_x_VGG16.npy', 'w'),x_generator)
-np.save(open('video_y_VGG16.npy','w'),y_lable)
+  train_data = np.load(open('video_x_VGG16.npy'))
+  train_labels = np.load(open('video_y_VGG16.npy'))
+  train_data,train_labels = shuffle(train_data,train_labels)
+  validation_data = np.load(open('video_x_validate_VGG16.npy'))
+  validation_labels = np.load(open('video_y_validate_VGG16.npy'))
+  validation_data,validation_labels = shuffle(validation_data,validation_labels)
 
-batch = 0
+  train_data = train_data.reshape(train_data.shape[0],
+                     train_data.shape[1] * train_data.shape[2],
+                     train_data.shape[3])
+  validation_data = validation_data.reshape(validation_data.shape[0],
+                     validation_data.shape[1] * validation_data.shape[2],
+                     validation_data.shape[3])
+  print train_data.shape
+  return 
 
-x_generator = None
-y_lable = None
-
-for x,y in validation_generator:
-    if batch == (3974/batch_size):
-        break
-    print "predict on batch validate:",batch
-    batch+=1
-    if x_generator==None:
-       x_generator = base_model.predict_on_batch(x)
-       y_lable = y
-    else:
-       x_generator = np.append(x_generator,base_model.predict_on_batch(x),axis=0)
-       y_lable = np.append(y_lable,y,axis=0)
-
-x_generator,y_lable = shuffle(x_generator,y_lable)
-np.save(open('video_x_validate_VGG16.npy', 'w'),x_generator)
-np.save(open('video_y_validate_VGG16.npy','w'),y_lable)
-'''
-
-train_data = np.load(open('video_x_VGG16.npy'))
-train_labels = np.load(open('video_y_VGG16.npy'))
-train_data,train_labels = shuffle(train_data,train_labels)
-validation_data = np.load(open('video_x_validate_VGG16.npy'))
-validation_labels = np.load(open('video_y_validate_VGG16.npy'))
-validation_data,validation_labels = shuffle(validation_data,validation_labels)
-
-print len(train_data)
-train_data = train_data.reshape(train_data.shape[0],
-                   train_data.shape[1] * train_data.shape[2],
-                   train_data.shape[3])
-validation_data = validation_data.reshape(validation_data.shape[0],
-                   validation_data.shape[1] * validation_data.shape[2],
-                   validation_data.shape[3])
-print train_data.shape
 model = Sequential()
 model.add(LSTM(256,dropout=0.2,input_shape=(train_data.shape[1],
                    train_data.shape[2])))
@@ -106,7 +106,6 @@ model.add(Dropout(0.5))
 model.add(Dense(5, activation='softmax'))
 sgd = SGD(lr=0.00005, decay = 1e-6, momentum=0.9, nesterov=True)
 model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
-
 #model.load_weights('video_1_LSTM_1_512.h5')
 callbacks = [ EarlyStopping(monitor='val_loss', patience=10, verbose=0), ModelCheckpoint('video_1_LSTM_1_1024.h5', monitor='val_loss', save_best_only=True, verbose=0) ]
 nb_epoch = 500
