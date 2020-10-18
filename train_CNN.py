@@ -1,7 +1,7 @@
 from keras.models import Sequential
 from keras.layers import Dropout, Flatten, Dense
 from keras import applications
-from keras.optimizers import SGD
+from keras.optimizers import Adam
 from sklearn.utils import shuffle
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import EarlyStopping, ModelCheckpoint
@@ -99,14 +99,14 @@ def train_model(train_data,train_labels,validation_data,validation_labels):
   model.add(Dense(512, activation='relu'))
   model.add(Dense(512, activation='relu'))
   model.add(Dropout(0.5))
-  model.add(Dense(512, activation='relu'))
+  model.add(Dense(256, activation='relu'))
   model.add(Dropout(0.5))
   model.add(Dense(5, activation='softmax'))
-  sgd = SGD(lr=0.00005, decay = 1e-6, momentum=0.9, nesterov=True)
-  model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=['accuracy'])
+  adam = Adam(lr=0.0001, nesterov=True)
+  model.compile(optimizer=adam, loss='categorical_crossentropy', metrics=['accuracy'])
   model.load_weights('video_3_512_VGG_no_drop.h5')
   callbacks = [ EarlyStopping(monitor='val_loss', patience=10, verbose=0), ModelCheckpoint('video_3_512_VGG_no_drop.h5', monitor='val_loss', save_best_only=True, verbose=0) ]
-  nb_epoch = 500
+  nb_epoch = 1000
   model.fit(train_data,train_labels,validation_data = (validation_data,validation_labels),batch_size=batch_size,nb_epoch=nb_epoch,callbacks=callbacks,shuffle=True,verbose=1)
   return model
 
